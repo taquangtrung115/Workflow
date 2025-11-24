@@ -71,16 +71,24 @@ namespace Workflow.Services
 
         public async Task<FileType?> FindByMimeOrExtensionAsync(string mimeType, string extension)
         {
-            var fileTypes = await _context.FileTypes.ToListAsync();
-
-            foreach (var ft in fileTypes)
+            // First try to find by mime type (most efficient)
+            if (!string.IsNullOrEmpty(mimeType))
             {
-                // Kiểm tra mime type
-                if (!string.IsNullOrEmpty(mimeType) && ft.Mime.Equals(mimeType, StringComparison.OrdinalIgnoreCase))
-                    return ft;
+                var fileTypeByMime = await _context.FileTypes
+                    .FirstOrDefaultAsync(ft => ft.Mime.ToLower() == mimeType.ToLower());
+                
+                if (fileTypeByMime != null)
+                    return fileTypeByMime;
+            }
 
-                // Kiểm tra extension
-                if (!string.IsNullOrEmpty(extension))
+            // If not found by mime, check extensions
+            // Note: This requires loading all FileTypes due to JSON field query limitation
+            // For better performance, consider storing extensions in a separate table
+            if (!string.IsNullOrEmpty(extension))
+            {
+                var fileTypes = await _context.FileTypes.ToListAsync();
+                
+                foreach (var ft in fileTypes)
                 {
                     var extensions = JsonSerializer.Deserialize<List<string>>(ft.ExtensionsJson) ?? new List<string>();
                     if (extensions.Any(ext => ext.Equals(extension, StringComparison.OrdinalIgnoreCase)))

@@ -356,10 +356,14 @@ namespace Workflow.Services
             }
             else if (level.ApproverType == "Department")
             {
-                // TODO: Implement department check
-                // Cần table Users với DepartmentId để kiểm tra
-                // Tạm thời return true cho demo
-                return true;
+                // WARNING: Department validation not fully implemented
+                // This requires a Users table with DepartmentId field
+                // Current implementation: deny by default for production safety
+                // To enable department approvals, implement proper User-Department relationship
+                
+                // For demo purposes, you can temporarily enable this by checking level.DepartmentId
+                // Production should implement: check if user.DepartmentId == level.DepartmentId
+                return false; // Changed from true to false for security
             }
 
             return false;
