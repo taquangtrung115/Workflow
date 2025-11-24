@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Workflow.Data;
 using Workflow.DTOs;
 using Workflow.Models;
+using Workflow.Services.Strategies;
+using Workflow.Services.Validators;
 
 namespace Workflow.Services
 {
@@ -26,17 +28,17 @@ namespace Workflow.Services
     public class WorkflowService : IWorkflowService
     {
         private readonly WorkflowDbContext _context;
-        private readonly IFileTypeService _fileTypeService;
-        private readonly IPermissionService _permissionService;
+        private readonly ApproverStrategyFactory _strategyFactory;
+        private readonly ValidationPipeline _validationPipeline;
 
         public WorkflowService(
             WorkflowDbContext context,
-            IFileTypeService fileTypeService,
-            IPermissionService permissionService)
+            ApproverStrategyFactory strategyFactory,
+            ValidationPipeline validationPipeline)
         {
             _context = context;
-            _fileTypeService = fileTypeService;
-            _permissionService = permissionService;
+            _strategyFactory = strategyFactory;
+            _validationPipeline = validationPipeline;
         }
 
         public async Task<WorkflowInstanceResponse> StartWorkflowAsync(Guid templateId, StartWorkflowRequest request, Guid requestedBy)
@@ -102,14 +104,20 @@ namespace Workflow.Services
                 if (currentLevel == null)
                     throw new InvalidOperationException("Level hiện tại không tồn tại");
 
-                // 3. Validate document file type với AllowedFileTypes của level
-                await ValidateDocumentFileTypeAsync(instance.Document!, currentLevel);
+                // 3-5. Run validation pipeline
+                var validationContext = new WorkflowValidationContext
+                {
+                    Instance = instance,
+                    CurrentLevel = currentLevel,
+                    Document = instance.Document!,
+                    ApproverId = approverId
+                };
 
-                // 4. Validate user có quyền approve file type
-                await ValidateUserFileTypePermissionAsync(approverId, instance.Document!);
-
-                // 5. Validate user có trong scope của level
-                await ValidateUserInLevelScopeAsync(approverId, currentLevel);
+                var validationResult = await _validationPipeline.ValidateAsync(validationContext);
+                if (!validationResult.IsValid)
+                {
+                    throw new UnauthorizedAccessException(validationResult.ErrorMessage ?? "Validation failed");
+                }
 
                 // 6. Kiểm tra user đã approve chưa
                 var existingApproval = instance.ApprovalRecords
@@ -193,9 +201,19 @@ namespace Workflow.Services
                     throw new InvalidOperationException("Level hiện tại không tồn tại");
 
                 // Validate user permissions (similar to approve)
-                await ValidateDocumentFileTypeAsync(instance.Document!, currentLevel);
-                await ValidateUserFileTypePermissionAsync(approverId, instance.Document!);
-                await ValidateUserInLevelScopeAsync(approverId, currentLevel);
+                var validationContext = new WorkflowValidationContext
+                {
+                    Instance = instance,
+                    CurrentLevel = currentLevel,
+                    Document = instance.Document!,
+                    ApproverId = approverId
+                };
+
+                var validationResult = await _validationPipeline.ValidateAsync(validationContext);
+                if (!validationResult.IsValid)
+                {
+                    throw new UnauthorizedAccessException(validationResult.ErrorMessage ?? "Validation failed");
+                }
 
                 // Create rejection record
                 var approvalRecord = new ApprovalRecord
@@ -258,7 +276,8 @@ namespace Workflow.Services
                     continue;
 
                 // Kiểm tra user có trong scope của level không
-                if (await IsUserInLevelScopeAsync(userId, currentLevel))
+                var strategy = _strategyFactory.GetStrategy(currentLevel.ApproverType);
+                if (strategy != null && await strategy.IsUserInScopeAsync(userId, currentLevel))
                 {
                     // Kiểm tra user chưa approve
                     var hasApproved = instance.ApprovalRecords
@@ -280,94 +299,7 @@ namespace Workflow.Services
             return responses;
         }
 
-        // Helper methods for validation
-
-        private async Task ValidateDocumentFileTypeAsync(Document document, WorkflowLevel level)
-        {
-            if (string.IsNullOrEmpty(level.AllowedFileTypesJson))
-            {
-                // Policy: deny-by-default nếu không có AllowedFileTypes
-                throw new UnauthorizedAccessException("Level này không cho phép duyệt bất kỳ loại file nào");
-            }
-
-            var allowedFileTypes = JsonSerializer.Deserialize<List<string>>(level.AllowedFileTypesJson) ?? new List<string>();
-
-            if (allowedFileTypes.Count == 0)
-            {
-                throw new UnauthorizedAccessException("Level này không cho phép duyệt bất kỳ loại file nào");
-            }
-
-            var docMime = document.MimeType ?? "";
-            var docExt = Path.GetExtension(document.Filename);
-
-            // Kiểm tra mime type hoặc extension có trong allowed list không
-            bool isAllowed = allowedFileTypes.Any(allowed =>
-                allowed.Equals(docMime, StringComparison.OrdinalIgnoreCase) ||
-                allowed.Equals(docExt, StringComparison.OrdinalIgnoreCase));
-
-            if (!isAllowed)
-            {
-                throw new UnauthorizedAccessException(
-                    $"File type '{docMime}' hoặc extension '{docExt}' không được phép ở level này");
-            }
-        }
-
-        private async Task ValidateUserFileTypePermissionAsync(Guid userId, Document document)
-        {
-            var docMime = document.MimeType ?? "";
-            var docExt = Path.GetExtension(document.Filename);
-
-            // Tìm FileType matching với document
-            var fileType = await _fileTypeService.FindByMimeOrExtensionAsync(docMime, docExt);
-
-            if (fileType == null)
-            {
-                throw new UnauthorizedAccessException(
-                    $"File type không được nhận diện trong hệ thống: mime={docMime}, ext={docExt}");
-            }
-
-            // Kiểm tra user có permission cho file type này không
-            var hasPermission = await _permissionService.HasPermissionAsync(userId, fileType.Id);
-
-            if (!hasPermission)
-            {
-                throw new UnauthorizedAccessException(
-                    $"User không có quyền duyệt file type '{fileType.Name}'");
-            }
-        }
-
-        private async Task ValidateUserInLevelScopeAsync(Guid userId, WorkflowLevel level)
-        {
-            if (!await IsUserInLevelScopeAsync(userId, level))
-            {
-                throw new UnauthorizedAccessException("User không có quyền approve ở level này");
-            }
-        }
-
-        private async Task<bool> IsUserInLevelScopeAsync(Guid userId, WorkflowLevel level)
-        {
-            if (level.ApproverType == "Users")
-            {
-                if (string.IsNullOrEmpty(level.UserIdsJson))
-                    return false;
-
-                var userIds = JsonSerializer.Deserialize<List<Guid>>(level.UserIdsJson) ?? new List<Guid>();
-                return userIds.Contains(userId);
-            }
-            else if (level.ApproverType == "Department")
-            {
-                // WARNING: Department validation not fully implemented
-                // This requires a Users table with DepartmentId field
-                // Current implementation: deny by default for production safety
-                // To enable department approvals, implement proper User-Department relationship
-                
-                // For demo purposes, you can temporarily enable this by checking level.DepartmentId
-                // Production should implement: check if user.DepartmentId == level.DepartmentId
-                return false; // Changed from true to false for security
-            }
-
-            return false;
-        }
+        // Helper methods for mapping
 
         private async Task<WorkflowInstanceResponse> MapToResponseAsync(WorkflowInstance instance)
         {
