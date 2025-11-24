@@ -14,11 +14,21 @@ namespace Workflow.Services.Strategies
 
         public ApproverStrategyFactory(IEnumerable<IApproverStrategy> strategies)
         {
-            _strategies = strategies.ToDictionary(
-                s => s.ApproverType,
-                s => s,
-                StringComparer.OrdinalIgnoreCase
-            );
+            _strategies = new Dictionary<string, IApproverStrategy>(StringComparer.OrdinalIgnoreCase);
+            
+            foreach (var strategy in strategies)
+            {
+                if (_strategies.ContainsKey(strategy.ApproverType))
+                {
+                    // Log warning or throw exception - for now, last one wins
+                    // In production, consider logging this conflict
+                    _strategies[strategy.ApproverType] = strategy;
+                }
+                else
+                {
+                    _strategies.Add(strategy.ApproverType, strategy);
+                }
+            }
         }
 
         /// <summary>

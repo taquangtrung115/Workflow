@@ -32,23 +32,26 @@ namespace Workflow.Services.Strategies.Examples
 
         public Task<bool> IsUserInScopeAsync(Guid userId, WorkflowLevel level)
         {
-            // TODO: Implement role-based check
-            // Example implementation:
+            // EXAMPLE ONLY - NOT FULLY IMPLEMENTED
+            // To use this strategy, you must implement the logic below:
+            // 
             // 1. Get user's roles from database
             // 2. Parse allowed roles from level.RoleNamesJson (or similar field)
             // 3. Check if user has any of the required roles
             
+            // Example implementation:
             // var user = await _context.Users.Include(u => u.Roles).FirstOrDefaultAsync(u => u.Id == userId);
             // var requiredRoles = JsonSerializer.Deserialize<List<string>>(level.RoleNamesJson);
             // return user.Roles.Any(r => requiredRoles.Contains(r.Name));
 
-            // Placeholder implementation
-            return Task.FromResult(false);
+            throw new NotImplementedException(
+                "RoleBasedApproverStrategy is an example. Implement the logic or remove this strategy.");
         }
 
         public Task<List<Guid>> GetApproverUserIdsAsync(WorkflowLevel level)
         {
-            // TODO: Get all users with the required roles
+            // EXAMPLE ONLY - NOT FULLY IMPLEMENTED
+            // To use: implement logic to get all users with required roles
             // Example:
             // var requiredRoles = JsonSerializer.Deserialize<List<string>>(level.RoleNamesJson);
             // var userIds = await _context.Users
@@ -56,7 +59,8 @@ namespace Workflow.Services.Strategies.Examples
             //     .Select(u => u.Id)
             //     .ToListAsync();
 
-            return Task.FromResult(new List<Guid>());
+            throw new NotImplementedException(
+                "RoleBasedApproverStrategy is an example. Implement the logic or remove this strategy.");
         }
     }
 }

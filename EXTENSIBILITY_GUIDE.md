@@ -93,6 +93,8 @@ builder.Services.AddSingleton<IApproverStrategy, MyCustomApproverStrategy>();
 
 ## 🔍 Built-in Strategy Examples
 
+> ⚠️ **Important**: These are examples in the `Examples/` folder. They are **NOT registered by default** and will throw `NotImplementedException` if used. You must implement the logic before using them in production.
+
 ### 1. Role-Based Approver Strategy
 
 **Scenario**: Approve based on user roles (e.g., "Manager", "Director")
@@ -100,7 +102,7 @@ builder.Services.AddSingleton<IApproverStrategy, MyCustomApproverStrategy>();
 **Implementation**: See `Services/Strategies/Examples/RoleBasedApproverStrategy.cs`
 
 ```csharp
-// Register in Program.cs
+// AFTER implementing the logic, register in Program.cs:
 builder.Services.AddSingleton<IApproverStrategy, RoleBasedApproverStrategy>();
 
 // Use in template
@@ -201,6 +203,8 @@ builder.Services.AddScoped<ValidationPipeline>(sp =>
 
 ## 🔧 Built-in Validator Examples
 
+> ⚠️ **Important**: Examples in the `Examples/` folder are **NOT registered by default**. Some return success by default (to not block workflows) while others throw exceptions. Implement the logic before using in production.
+
 ### 1. Document Size Validator
 
 **Purpose**: Restrict file sizes at different approval levels
@@ -208,7 +212,7 @@ builder.Services.AddScoped<ValidationPipeline>(sp =>
 **Implementation**: See `Services/Validators/Examples/DocumentSizeValidator.cs`
 
 ```csharp
-// Usage
+// AFTER adding FileSize field to Document model, register:
 pipeline.AddValidator(new DocumentSizeValidator());
 
 // Configuration in template

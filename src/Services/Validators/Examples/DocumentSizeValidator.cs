@@ -29,12 +29,15 @@ namespace Workflow.Services.Validators.Examples
 
         public Task<ValidationResult> ValidateAsync(WorkflowValidationContext context)
         {
-            // TODO: Add FileSize field to Document model
-            // var fileSize = context.Document.FileSize;
+            // EXAMPLE ONLY - NOT FULLY IMPLEMENTED
+            // To use this validator:
+            // 1. Add FileSize field to Document model
+            // 2. Add MaxFileSizeBytes field to WorkflowLevel model
+            // 3. Implement the validation logic below
             
-            // TODO: Add MaxFileSizeBytes field to WorkflowLevel model
+            // Example implementation:
+            // var fileSize = context.Document.FileSize;
             // var maxSize = context.CurrentLevel.MaxFileSizeBytes ?? DefaultMaxSize;
-
             // if (fileSize > maxSize)
             // {
             //     var maxSizeMB = maxSize / (1024 * 1024);
@@ -43,7 +46,8 @@ namespace Workflow.Services.Validators.Examples
             //         $"File size ({fileSizeMB:F2}MB) vượt quá giới hạn cho phép ({maxSizeMB:F2}MB) ở level này");
             // }
 
-            // Placeholder - always passes
+            // NOTE: Currently returns success to not block workflow
+            // In production, implement properly or remove this validator
             return Task.FromResult(ValidationResult.Success());
         }
     }

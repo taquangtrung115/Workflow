@@ -29,16 +29,14 @@ namespace Workflow.Services.Validators.Examples
 
         public Task<ValidationResult> ValidateAsync(WorkflowValidationContext context)
         {
-            // TODO: Add Amount field to Document model
-            // var documentAmount = context.Document.Amount;
-            
-            // TODO: Add approval limit configuration
-            // This could be:
-            // 1. Per-level configuration in WorkflowLevel
-            // 2. Per-user configuration in user profile
-            // 3. Per-role configuration
+            // EXAMPLE ONLY - NOT FULLY IMPLEMENTED
+            // To use this validator:
+            // 1. Add Amount field to Document model
+            // 2. Add approval limit configuration (per-level, per-user, or per-role)
+            // 3. Implement the validation logic below
             
             // Example implementation:
+            // var documentAmount = context.Document.Amount;
             // var userApprovalLimit = await GetUserApprovalLimit(context.ApproverId);
             // 
             // if (documentAmount > userApprovalLimit)
@@ -47,7 +45,8 @@ namespace Workflow.Services.Validators.Examples
             //         $"Document amount ${documentAmount:N2} vượt quá quyền hạn duyệt của user (${userApprovalLimit:N2})");
             // }
 
-            // Placeholder - always passes
+            // NOTE: Currently returns success to not block workflow
+            // In production, implement properly or remove this validator
             return Task.FromResult(ValidationResult.Success());
         }
     }

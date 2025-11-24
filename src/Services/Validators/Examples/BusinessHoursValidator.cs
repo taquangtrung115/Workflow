@@ -41,7 +41,7 @@ namespace Workflow.Services.Validators.Examples
             if (currentTime < _startTime || currentTime > _endTime)
             {
                 return Task.FromResult(ValidationResult.Failure(
-                    $"Approvals chỉ được phép từ {_startTime:hh\\:mm} đến {_endTime:hh\\:mm}"));
+                    $"Approvals chỉ được phép từ {_startTime.ToString(@"hh\:mm")} đến {_endTime.ToString(@"hh\:mm")}"));
             }
 
             return Task.FromResult(ValidationResult.Success());
