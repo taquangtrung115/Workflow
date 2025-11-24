@@ -13,6 +13,8 @@
 - ✅ **Audit Trail**: Ghi lại đầy đủ lịch sử approval với chữ ký số
 - ✅ **Transaction Safety**: Đảm bảo tính toàn vẹn dữ liệu khi approve đồng thời
 - ✅ **RESTful API**: API đầy đủ với Swagger documentation
+- 🆕 **Highly Extensible**: Strategy Pattern và Validation Pipeline cho khả năng mở rộng cao
+- 🆕 **Pluggable Architecture**: Dễ dàng thêm approver types và validation rules mới
 
 ---
 
@@ -312,6 +314,8 @@ Xem `DEPLOYMENT_GUIDE.md` cho hướng dẫn chi tiết deploy lên:
 | [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | Deploy lên production environments |
 | [USAGE_EXAMPLES.md](USAGE_EXAMPLES.md) | Test scenarios với cURL examples |
 | [SQL_SCRIPTS.sql](SQL_SCRIPTS.sql) | SQL scripts và useful queries |
+| 🆕 [**EXTENSIBILITY_GUIDE.md**](EXTENSIBILITY_GUIDE.md) | **Hướng dẫn mở rộng hệ thống - Thêm strategies & validators** |
+| 🆕 [**IMPROVEMENTS.md**](IMPROVEMENTS.md) | **Tóm tắt các cải tiến về khả năng mở rộng** |
 
 ---
 

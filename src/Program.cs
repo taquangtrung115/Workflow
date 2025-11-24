@@ -21,6 +21,26 @@ builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IWorkflowService, WorkflowService>();
 
+// Register approver strategies
+builder.Services.AddSingleton<Workflow.Services.Strategies.IApproverStrategy, Workflow.Services.Strategies.UsersApproverStrategy>();
+builder.Services.AddSingleton<Workflow.Services.Strategies.IApproverStrategy, Workflow.Services.Strategies.DepartmentApproverStrategy>();
+builder.Services.AddSingleton<Workflow.Services.Strategies.ApproverStrategyFactory>();
+
+// Register validators and pipeline
+builder.Services.AddScoped<Workflow.Services.Validators.ValidationPipeline>(sp =>
+{
+    var fileTypeService = sp.GetRequiredService<IFileTypeService>();
+    var permissionService = sp.GetRequiredService<IPermissionService>();
+    var strategyFactory = sp.GetRequiredService<Workflow.Services.Strategies.ApproverStrategyFactory>();
+
+    var pipeline = new Workflow.Services.Validators.ValidationPipeline();
+    pipeline.AddValidator(new Workflow.Services.Validators.FileTypeValidator());
+    pipeline.AddValidator(new Workflow.Services.Validators.UserFileTypePermissionValidator(fileTypeService, permissionService));
+    pipeline.AddValidator(new Workflow.Services.Validators.ApproverScopeValidator(strategyFactory));
+    
+    return pipeline;
+});
+
 // Configure Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
